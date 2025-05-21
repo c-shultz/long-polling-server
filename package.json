@@ -1,0 +1,23 @@
+{
+  "name": "stack-server-long-polling",
+  "version": "1.0.0",
+  "description": "FIFO Stack Server Project",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "ruby test/stack-test.rb",
+    "start": "node src/index.js",
+    "debug": "node --inspect src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c-shultz/stack-server-long-polling.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/c-shultz/stack-server-long-polling/issues"
+  },
+  "homepage": "https://github.com/c-shultz/stack-server-long-polling#readme"
+}
