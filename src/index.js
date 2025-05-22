@@ -11,21 +11,23 @@ console.log("Starting up.");
 const stack = [];
 let connectionManager = new ConnectionManager();
 const server = net.createServer((socket) => {
+    console.log('Client connected:', socket.remoteAddress, socket.remotePort);
     let handleData = connectionManager.addConnection({
-        onPush: (buffer) => {
+        onPushResponse: (buffer) => {
             console.log("Trying to ack push.");
-            stack.push(buffer);
-            socket.write([RESPONSE_PUSH]);
+            socket.write(new Uint8Array([RESPONSE_PUSH]));
         },
-        onPop: () => {
+        onPopResponse: () => {
             console.log("Tried to pop, but this is broken.");
         },
-        onBusy: () => {
+        onBusyResponse: () => {
             console.log("Tried to respond busy, but this is broken.");
-            socket.write([RESPONSE_BUSY]);
+            socket.write(new Uint8Array([RESPONSE_BUSY]));
         },
     });
-    socket.on('data', handleData); // Pass incoming Buffer object to connectionManager to be processed.
+    socket.on('data', (data) => {
+        handleData(data); // Pass incoming Buffer object to connectionManager to be processed.
+    })
 
     /*
     connection = startConnection(socket);
@@ -36,9 +38,9 @@ const server = net.createServer((socket) => {
     */
     
 
-    socket.on('connect', () => {
-        console.log('Connection!');
-    });
+    //socket.on('connect', () => {
+        //console.log('Connection!');
+    //});
 });
 
 
