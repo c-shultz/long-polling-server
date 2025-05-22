@@ -61,6 +61,9 @@ export default class FrameDecoder
             default:
                 throw new Error("Unexpcted new data. Frame already flagged as complete.");
         }
+        return {
+            status: this.status
+        }
     }
 
 

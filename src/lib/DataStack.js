@@ -1,25 +1,38 @@
+import EventEmitter from "node:events";
 
 const MAX_STACK_SIZE = 100;
 
 export default class DataStack{
-    constructor()
+    constructor(max_connections)
     {
         this.stack = [];
+        this.emitter = new EventEmitter();
+        this.emitter.setMaxListeners(max_connections)
     }
 
-    push(val)
+    requestPush(val, pushCallback)
     {
         if (this.stack.length < MAX_STACK_SIZE) {
             this.stack.push(val);
-            return true;
+            pushCallback();
+            this.emitter.emit('push');
         } else {
-            return false;
+            const queuedCallback = () => this.requestPush(val, pushCallback);
+            this.emitter.on('pop', queuedCallback);
+            return () => this.emitter.removeListener('pop', queuedCallback);
         }
     }
 
-    pop()
+    requestPop(popCallback)
     {
-        return this.stack.pop();
+        if (this.stack.length > 0) {
+            popCallback(this.stack.pop());
+            this.emitter.emit('pop');
+        } else {
+            const queuedCallback = () => this.requestPop(popCallback);
+            this.emitter.on('push', queuedCallback);
+            return () => this.emitter.removeListener('push', queuedCallback);
+        }
     }
     
 }
