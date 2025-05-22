@@ -1,46 +1,42 @@
 import net from 'node:net';
 import ConnectionManager from './lib/ConnectionManager.js';
+import { getResponseBusy, getResponsePush, getResponsePop, FRAME_TYPE } from './lib/utils.js';
+import FrameDecoder from './lib/FrameDecoder.js';
+import DataStack from './lib/DataStack.js';
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = 'localhost';
 
-const RESPONSE_BUSY = 0xFF;
-const RESPONSE_PUSH = 0x00;
 
 console.log("Starting up.");
-const stack = [];
+const dataStack = new DataStack();
 let connectionManager = new ConnectionManager();
 const server = net.createServer((socket) => {
-    console.log('Client connected:', socket.remoteAddress, socket.remotePort);
-    let handleData = connectionManager.addConnection({
-        onPushResponse: (buffer) => {
-            console.log("Trying to ack push.");
-            socket.write(new Uint8Array([RESPONSE_PUSH]));
-        },
-        onPopResponse: () => {
-            console.log("Tried to pop, but this is broken.");
-        },
-        onBusyResponse: () => {
-            console.log("Tried to respond busy, but this is broken.");
-            socket.write(new Uint8Array([RESPONSE_BUSY]));
-        },
-    });
-    socket.on('data', (data) => {
-        handleData(data); // Pass incoming Buffer object to connectionManager to be processed.
-    })
+    console.log('Client connection attempt:', socket.remoteAddress, socket.remotePort);
+    if (!connectionManager.maybeAddConnection()){
+        socket.end(getResponseBusy()); //Send busy response and close socket.
+    } else {
+        console.log('Confirm client:', socket.remoteAddress, socket.remotePort);
+    }
 
-    /*
-    connection = startConnection(socket);
-    connection.on('push', (payload) => {console.log("Push it onto stack.")})
-    connection.on('pop', () => {console.log("Pop it off of stack.")})
-    connection.on('bump', () => {console.log("Too slow. You lose.")})
-    connection.on('error', () => {console.log("Malformed.")})
-    */
+    let frameDecoder = new FrameDecoder();
     
-
-    //socket.on('connect', () => {
-        //console.log('Connection!');
-    //});
+    socket.on('data', (data) => {
+        const { status, payload = null } = frameDecoder.handleData(data);
+        if (status.complete) {
+            switch (status.type) {
+                case FRAME_TYPE.POP:
+                    socket.end(getResponsePop(dataStack.pop())); //Send pop response and close socket.
+                    console.log("Did the pop, but there's no queueing and maybe the data stack was empty.");
+                    break;
+                case FRAME_TYPE.PUSH:
+                    dataStack.push(payload);
+                    socket.end(getResponsePush()); //Send push confirm and close socket.
+                    console.log("Did the push, but there's no blocking for full stack.");
+                    break;
+            }
+        }
+    })
 });
 
 
