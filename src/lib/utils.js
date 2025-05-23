@@ -19,14 +19,14 @@ export function getResponsePush() {
 }
 
 export function getResponsePop(payload) {
-  const max_payload_length = BITMASK_PAYLOAD_SIZE;
+  const maxPayloadLength = BITMASK_PAYLOAD_SIZE;
 
   if (!Buffer.isBuffer(payload)) {
     throw new TypeError(
       "Unexpected data encoding. Expected Buffer received " + typeof payload,
     );
   }
-  if (payload.length == 0 || payload.length > max_payload_length) {
+  if (payload.length == 0 || payload.length > maxPayloadLength) {
     throw new RangeError("Invalid payload size.");
   }
 
@@ -43,29 +43,29 @@ export function decodeHeader(buffer) {
   if (buffer.length == 0) {
     throw new RangeError("Header can't be parsed on empty Buffer");
   }
-  const header_byte = buffer.readUint8(0);
-  let parsed_size;
-  let parsed_type =
-    (BITMASK_HEADER_TYPE & header_byte) == 0 ? FRAME_TYPE.PUSH : FRAME_TYPE.POP;
+  const headerByte = buffer.readUint8(0);
+  let parsedSize;
+  let parsedType =
+    (BITMASK_HEADER_TYPE & headerByte) == 0 ? FRAME_TYPE.PUSH : FRAME_TYPE.POP;
 
-  if (parsed_type == FRAME_TYPE.PUSH) {
-    parsed_size = BITMASK_PAYLOAD_SIZE & header_byte;
-    if (parsed_size < 1) {
+  if (parsedType == FRAME_TYPE.PUSH) {
+    parsedSize = BITMASK_PAYLOAD_SIZE & headerByte;
+    if (parsedSize < 1) {
       throw new RangeError(
         "Payload size must be one or greater (since the size includes the header and at least one payload byte.",
       );
     }
-    if (parsed_size > BITMASK_PAYLOAD_SIZE) {
+    if (parsedSize > BITMASK_PAYLOAD_SIZE) {
       //Check maximum for the sake of completness. Bitmask should prevent this.
       throw new RangeError("Unexpected parsing error. Payload too large.");
     }
   } else {
-    parsed_size = null; //Just set to null for pop since it's ignored.
+    parsedSize = null; //Just set to null for pop since it's ignored.
   }
 
   return {
-    header_type: parsed_type,
-    payload_size: parsed_size,
+    headerType: parsedType,
+    payloadSize: parsedSize,
   };
 }
 
@@ -77,24 +77,4 @@ export function trimHeader(buffer) {
   }
 
   return buffer.subarray(HEADER_SIZE_BYTES);
-}
-
-export function copyToPayload(copyFrom, copyTo, bufferCursor) {
-  if (!Buffer.isBuffer(copyFrom)) {
-    throw new TypeError(
-      "Unexpected data encoding. Expected Buffer received " + typeof copyFrom,
-    );
-  }
-  if (!Buffer.isBuffer(copyTo)) {
-    throw new TypeError(
-      "Unexpected data encoding. Expected Buffer received " + typeof copyTo,
-    );
-  }
-  if (bufferCursor + copyFrom.length > copyTo.length) {
-    throw new RangeError(
-      "Malformed header/payload. Payload would exceed size indicated by header.",
-    );
-  }
-
-  copyFrom.copy(copyTo, bufferCursor);
 }

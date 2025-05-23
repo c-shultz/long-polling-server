@@ -1,13 +1,13 @@
 import net from "node:net";
-import ConnectionManager from "./lib/ConnectionManager.js";
+import ConnectionManager from "./lib/connection_manager.js";
 import {
   getResponseBusy,
   getResponsePush,
   getResponsePop,
   FRAME_TYPE,
 } from "./lib/utils.js";
-import FrameDecoder from "./lib/FrameDecoder.js";
-import DataStack from "./lib/DataStack.js";
+import FrameDecoder from "./lib/frame_decoder.js";
+import DataStack from "./lib/data_stack.js";
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = "localhost";

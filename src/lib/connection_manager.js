@@ -1,17 +1,17 @@
 const TEN_SECONDS_IN_MS = 10000;
 
 export default class ConnectionManager {
-  constructor(max_connections, delete_callback) {
+  constructor(maxConnection, deleteCallback) {
     this.connections = new Map(); // All connections will be here.
-    this.max_connections = max_connections;
-    this.delete_callback = delete_callback;
+    this.maxConnection = maxConnection;
+    this.deleteCallback = deleteCallback;
   }
 
   maybeAddConnection(socket) {
-    if (this.connections.size < this.max_connections) {
+    if (this.connections.size < this.maxConnection) {
       this.addConnection(socket);
       return true;
-    } else if (this.connections.size == this.max_connections) {
+    } else if (this.connections.size == this.maxConnection) {
       console.log("Bump the oldest if over ten seconds old.");
       if (this.maybeRemoveOldest()) {
         console.log("Adding new connection after bump.");
@@ -58,7 +58,7 @@ export default class ConnectionManager {
   }
   removeConnection(socket) {
     console.log("Remove connection from list");
-    this.delete_callback(socket);
+    this.deleteCallback(socket);
     this.connections.delete(socket);
   }
 }
