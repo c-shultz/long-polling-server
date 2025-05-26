@@ -1,4 +1,5 @@
 import pino from "pino";
+import { Socket } from "node:net";
 
 const prettyTransport = {
   target: "pino-pretty", // the module name
@@ -13,8 +14,9 @@ export const logger = pino({
 });
 
 /**
- *
- * @param socket
+ * Get some basic human-readable identifying info from socket for logging purposes.
+ * @param {Socket} socket - A socket object to get info from.
+ * @returns {object}      - Params to help identify socket/client/etc.
  */
 export function getSocketInfo(socket) {
   let address = "unknown";
