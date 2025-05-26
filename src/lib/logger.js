@@ -12,6 +12,10 @@ export const logger = pino({
   transport: prettyTransport,
 });
 
+/**
+ *
+ * @param socket
+ */
 export function getSocketInfo(socket) {
   let address = "unknown";
   let port = "unknown";

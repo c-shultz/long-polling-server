@@ -10,10 +10,12 @@ module.exports = {
   plugins: [
     "prettier",
     "filenames",
+    "jsdoc",
   ],
   extends: [
     "eslint:recommended",
     "plugin:prettier/recommended",
+    "plugin:jsdoc/recommended",
   ],
   rules: {
     // Format with Prettier and report differences as ESLint errors
@@ -43,12 +45,5 @@ module.exports = {
           "balanced": true
       }
     }],
-
-    // Require doc blocks.
-    'valid-jsdoc':  ["error",
-      { "requireReturn": true },
-      { "requireReturnType": true },
-      { "requireParamType": true },
-    ]
   },
 };

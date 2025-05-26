@@ -10,14 +10,24 @@ export const FRAME_TYPE = {
   PUSH: "PushRequest", // Header indicates push (and includes payload bits).
 };
 
+/**
+ *
+ */
 export function getResponseBusy() {
   return new Uint8Array([RESPONSE_BUSY]);
 }
 
+/**
+ *
+ */
 export function getResponsePush() {
   return new Uint8Array([RESPONSE_PUSH]);
 }
 
+/**
+ *
+ * @param payload
+ */
 export function getResponsePop(payload) {
   const maxPayloadLength = BITMASK_PAYLOAD_SIZE;
 
@@ -34,6 +44,10 @@ export function getResponsePop(payload) {
   return Buffer.concat([new Uint8Array([payload.length]), payload]);
 }
 
+/**
+ *
+ * @param buffer
+ */
 export function decodeHeader(buffer) {
   if (!Buffer.isBuffer(buffer)) {
     throw new TypeError(
@@ -69,6 +83,10 @@ export function decodeHeader(buffer) {
   };
 }
 
+/**
+ *
+ * @param buffer
+ */
 export function trimHeader(buffer) {
   if (!Buffer.isBuffer(buffer)) {
     throw new TypeError(
@@ -77,4 +95,12 @@ export function trimHeader(buffer) {
   }
 
   return buffer.subarray(HEADER_SIZE_BYTES);
+}
+
+/**
+ *
+ * @param socket
+ */
+export function socketFullyOpen(socket) {
+  return socket.readable && socket.writable;
 }

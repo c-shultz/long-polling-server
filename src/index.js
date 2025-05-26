@@ -4,6 +4,7 @@ import {
   getResponseBusy,
   getResponsePush,
   getResponsePop,
+  isSocketFullyOpen,
   FRAME_TYPE,
 } from "./lib/utils.js";
 import FrameDecoder from "./lib/frame_decoder.js";
@@ -17,15 +18,11 @@ const MAX_CONNECTIONS = 100;
 logger.info("Starting up.");
 const dataStack = new DataStack(MAX_CONNECTIONS);
 let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
-  if (socketFullyOpen(socket)) {
+  if (isSocketFullyOpen(socket)) {
     // Handle sockets that get deleted by the connection manager (because they are getting bumped off)
     socket.destroy(); // No busy-state signal needed since this is just getting bumped.
   }
 });
-
-function socketFullyOpen(socket) {
-  return socket.readable && socket.writable;
-}
 
 const server = net.createServer((socket) => {
   logger.debug(
@@ -35,7 +32,7 @@ const server = net.createServer((socket) => {
   );
   if (!connectionManager.maybeAddConnection(socket)) {
     logger.debug(getSocketInfo(socket), "No room for socket");
-    if (socketFullyOpen(socket)) {
+    if (isSocketFullyOpen(socket)) {
       socket.end(getResponseBusy()); // Send busy response and close socket.
     }
     logger.debug(
@@ -53,7 +50,7 @@ const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     let cancelPopRequest, cancelPushRequest;
     logger.trace([getSocketInfo(socket), data], "Got some data from client.");
-    if (!socketFullyOpen(socket)) {
+    if (!isSocketFullyOpen(socket)) {
       logger.trace(getSocketInfo(socket), "Socket not readable or writable.");
       return;
     }
