@@ -2,24 +2,27 @@ import { logger } from "./logger.js";
 import { decodeHeader, FRAME_TYPE, trimHeader } from "./utils.js";
 
 /**
- *
+ * Class to decode and parse incoming push/pop requests.
  */
 export default class FrameDecoder {
   /**
-   *
+   * Constructor.
    */
   constructor() {
     this.status = {
-      type: FRAME_TYPE.UNKNOWN,
-      complete: false,
+      type: FRAME_TYPE.UNKNOWN, // Start out as unknown, and will be set to push/pop depending on header.
+      complete: false, // To be set to true after all data is received from frame (may come all at once or not).
     };
     this.payload = null;
     this.payloadCursor = 0; // Next payload write position for incoming data.
   }
 
   /**
-   *
-   * @param buffer
+   * Handle a buffer full of incoming data.
+   * This function can handle a buffer containing all the frame data together or can handle cases
+   * where the server receives the full payload over multiple events.
+   * @param {Buffer} buffer - Incoming data.
+   * @returns {object}      - Status object containing decoded type, whether or not all data is received and (optionally) a full payload for push requests.
    */
   handleData(buffer) {
     if (!Buffer.isBuffer(buffer)) {
