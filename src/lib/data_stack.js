@@ -7,7 +7,6 @@ const MAX_STACK_SIZE = 100;
  * Class to create/manage stack.
  */
 export default class DataStack {
-
   /**
    * Constructor.
    */

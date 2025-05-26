@@ -129,7 +129,7 @@ const server = net.createServer((socket) => {
     // Log other errors.
     socket.on("error", (err) => {
       // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
-      if (err.code === 'ECONNRESET') {
+      if (err.code === "ECONNRESET") {
         logger.error(err, "Client disconnected.");
       } else {
         logger.fatal(err);
@@ -148,6 +148,8 @@ const serverConfig = { port: SERVER_PORT, hostname: SERVER_HOSTNAME };
 logger.info(serverConfig, "Creating server.");
 server.listen({ port: SERVER_PORT, hostname: SERVER_HOSTNAME }, () => {
   logger.info(serverConfig, "Listening now.");
-  console.log("Server started and listening on " + SERVER_HOSTNAME + " " + SERVER_PORT);
+  console.log(
+    "Server started and listening on " + SERVER_HOSTNAME + " " + SERVER_PORT,
+  );
   console.log(getLogFileInfo());
 });
