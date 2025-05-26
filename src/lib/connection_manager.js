@@ -13,7 +13,7 @@ export default class ConnectionManager {
    * @param {Function} deleteCallback - Callback for when old connections are bumped.
    */
   constructor(maxConnections, deleteCallback) {
-    this.connections = new Map(); // Data structure to manage all connections.
+    this.connections = new Map();
     this.maxConnections = maxConnections;
     this.deleteCallback = deleteCallback;
   }
@@ -33,7 +33,7 @@ export default class ConnectionManager {
         getSocketInfo(socket),
         "Adding new socket to connection list because there's room",
       );
-      this.addConnection(socket);
+      this.#addConnection(socket);
       return true;
     } else if (this.connections.size == this.maxConnections) {
       logger.trace(
@@ -46,7 +46,7 @@ export default class ConnectionManager {
           "Adding new connection after bumping oldest.",
         );
         // Successfully found an eligible old connection to bump off.
-        this.addConnection(socket);
+        this.#addConnection(socket);
         return true;
       } else {
         logger.trace(
@@ -92,9 +92,11 @@ export default class ConnectionManager {
 
   /**
    * Immediately add connection without checking if there's room.
+   *
+   * This should not be called without first checking for connection space.
    * @param {Socket} socket - Socket to add immediately.
    */
-  addConnection(socket) {
+  #addConnection(socket) {
     logger.debug(getSocketInfo(socket), "Add connection to list.");
     this.connections.set(socket, {
       createdAt: Date.now(),
