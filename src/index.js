@@ -9,7 +9,8 @@ import {
 } from "./lib/utils.js";
 import FrameDecoder from "./lib/frame_decoder.js";
 import DataStack from "./lib/data_stack.js";
-import { logger, getSocketInfo } from "./lib/logger.js";
+import { logger, getSocketInfo, getLogFileInfo } from "./lib/logger.js";
+import { get } from "node:https";
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = "localhost";
@@ -121,7 +122,12 @@ const server = net.createServer((socket) => {
 
     // Log other errors.
     socket.on("error", (err) => {
-      logger.error(err, "Socket error.");
+      // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
+      if (err.code === 'ECONNRESET') {
+        logger.error(err, "Client disconnected.");
+      } else {
+        throw err;
+      }
     });
   });
 });
@@ -135,4 +141,6 @@ const serverConfig = { port: SERVER_PORT, hostname: SERVER_HOSTNAME };
 logger.info(serverConfig, "Creating server.");
 server.listen({ port: SERVER_PORT, hostname: SERVER_HOSTNAME }, () => {
   logger.info(serverConfig, "Listening now.");
+  console.log("Server started and listening on " + SERVER_HOSTNAME + " " + SERVER_PORT);
+  console.log(getLogFileInfo());
 });

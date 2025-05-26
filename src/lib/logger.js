@@ -1,5 +1,15 @@
 import pino from "pino";
 import { Socket } from "node:net";
+import fs from "node:fs";
+
+const LOG_FILE_APP = 'app.log';
+const LOG_FILE_DEBUG = 'debug.log';
+
+// Configure multiple logging destinations.
+const streams = [
+  {level: 'debug', stream: fs.createWriteStream(LOG_FILE_DEBUG)}, // For 'debug'.
+  {level: 'info', stream: fs.createWriteStream(LOG_FILE_APP)}, // For 'info'.
+]
 
 const prettyTransport = {
   target: "pino-pretty", // the module name
@@ -9,9 +19,8 @@ const prettyTransport = {
 };
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL || "trace",
-  transport: prettyTransport,
-});
+  level: process.env.LOG_MODE || "info",
+}, pino.multistream(streams));
 
 /**
  * Get some basic human-readable identifying info from socket for logging purposes.
@@ -31,4 +40,16 @@ export function getSocketInfo(socket) {
     socketAddress: address,
     socketPort: port,
   };
+}
+
+/**
+ * Get string with basic info about log file(s).
+ * @returns {string} - Info string.
+ */
+export function getLogFileInfo() {
+    let info = "Logging to: " + LOG_FILE_APP;
+    if (process.env.LOG_MODE === 'debug') {
+        info += "\nDebug mode enabled, so also logging to " + LOG_FILE_DEBUG;
+    }
+    return info;
 }
