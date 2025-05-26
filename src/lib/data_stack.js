@@ -7,16 +7,14 @@ const MAX_STACK_SIZE = 100;
  * Class to create/manage stack.
  */
 export default class DataStack {
+
   /**
    * Constructor.
-   * @param {number} maxConnections - Max number of allowed connections (relevant to how many may be listening for push/pop)
    */
-  constructor(maxConnections) {
+  constructor() {
     this.stack = []; // Simple data structure of stack. Stored objects will be Buffer object.
-
     // Set up emitters to handle on push and on pop events for waiting clients.
     this.emitter = new EventEmitter();
-    this.emitter.setMaxListeners(maxConnections); // Potential listener count grows with number of connections.
   }
 
   /**

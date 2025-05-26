@@ -10,14 +10,20 @@ import {
 import FrameDecoder from "./lib/frame_decoder.js";
 import DataStack from "./lib/data_stack.js";
 import { logger, getSocketInfo, getLogFileInfo } from "./lib/logger.js";
-import { get } from "node:https";
+import events from "node:events";
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = "localhost";
 const MAX_CONNECTIONS = 100;
 
+// The server is heavily event driven so there can easily be more
+// listeners than the default max of '10'. Without increasing this,
+// the EventEmitter logs warnings. We shouldn't expect more listeners
+// than there are connections for any given emitter.
+events.defaultMaxListeners = MAX_CONNECTIONS;
+
 logger.info("Starting up.");
-const dataStack = new DataStack(MAX_CONNECTIONS);
+const dataStack = new DataStack();
 let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
   if (isSocketFullyOpen(socket)) {
     // Handle sockets that get deleted by the connection manager (because they are getting bumped off)
@@ -126,6 +132,7 @@ const server = net.createServer((socket) => {
       if (err.code === 'ECONNRESET') {
         logger.error(err, "Client disconnected.");
       } else {
+        logger.fatal(err);
         throw err;
       }
     });
