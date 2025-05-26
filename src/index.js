@@ -30,6 +30,8 @@ const server = net.createServer((socket) => {
     socket.remoteAddress,
     socket.remotePort,
   );
+
+  // Attempt to add incoming socket to connection list.
   if (!connectionManager.maybeAddConnection(socket)) {
     logger.debug(getSocketInfo(socket), "No room for socket");
     if (isSocketFullyOpen(socket)) {
@@ -45,8 +47,8 @@ const server = net.createServer((socket) => {
     logger.debug(getSocketInfo(socket), "Confirm client");
   }
 
+  // Handle incoming data events (frames may come all at once or be split up).
   let frameDecoder = new FrameDecoder();
-
   socket.on("data", (data) => {
     let cancelPopRequest, cancelPushRequest;
     logger.trace([getSocketInfo(socket), data], "Got some data from client.");
@@ -54,6 +56,8 @@ const server = net.createServer((socket) => {
       logger.trace(getSocketInfo(socket), "Socket not readable or writable.");
       return;
     }
+
+    // Try to parse incoming data, or just ignore client if there's decoding error.
     let status, payload;
     try {
       ({ status, payload = null } = frameDecoder.handleData(data));
@@ -62,6 +66,8 @@ const server = net.createServer((socket) => {
       socket.end();
       return;
     }
+
+    // If we've finished receiving all data for this connection.
     if (status.complete) {
       switch (status.type) {
         case FRAME_TYPE.POP:
@@ -81,9 +87,10 @@ const server = net.createServer((socket) => {
           break;
       }
     }
+
+    // A little cleanup in case connections closed before queued pushes/pops could be serviced.
     socket.on("end", () => {
       logger.debug(getSocketInfo(socket), "Socket end event");
-      // A little cleanup in case connections closed before queued pushes/pops could be serviced.
       if (typeof cancelPopRequest === "function") {
         cancelPopRequest();
         logger.debug(
@@ -99,9 +106,6 @@ const server = net.createServer((socket) => {
         );
       }
     });
-    socket.on("error", (err) => {
-      logger.error(err, "Socket error.");
-    });
 
     // Remove connection for any possible full/partial socket closures.
     const removeOnClose = () => {
@@ -113,6 +117,11 @@ const server = net.createServer((socket) => {
     };
     ["close", "end", "finish"].forEach((eventName) => {
       socket.once(eventName, removeOnClose);
+    });
+
+    // Log other errors.
+    socket.on("error", (err) => {
+      logger.error(err, "Socket error.");
     });
   });
 });
