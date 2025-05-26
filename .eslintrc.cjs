@@ -45,5 +45,14 @@ module.exports = {
           "balanced": true
       }
     }],
+    'jsdoc/require-jsdoc': ['error', {
+      require: {
+        FunctionDeclaration: true,
+        MethodDefinition:     true,
+        ClassDeclaration:     true,
+        ArrowFunctionExpression: false,  // skip arrow funcs
+        FunctionExpression:      false   // skip inline funcs
+      }
+    }],
   },
 };

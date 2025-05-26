@@ -1,22 +1,41 @@
 import { logger, getSocketInfo } from "./logger.js";
+import { Socket } from "node:net";
+
 const TEN_SECONDS_IN_MS = 10000;
 
+/**
+ * Class to manage the addition and removal of connections.
+ */
 export default class ConnectionManager {
-  constructor(maxConnection, deleteCallback) {
-    this.connections = new Map(); // All connections will be here.
-    this.maxConnection = maxConnection;
+  /**
+   * Constructor.
+   * @param {number} maxConnections   - Maximum number allowed connections.
+   * @param {Function} deleteCallback - Callback for when old connections are bumped.
+   */
+  constructor(maxConnections, deleteCallback) {
+    this.connections = new Map(); // Data structure to manage all connections.
+    this.maxConnections = maxConnections;
     this.deleteCallback = deleteCallback;
   }
 
+  /**
+   * Try to add provide socket to connection list.
+   *
+   * Connection is added immediately if there's room. If there's not room:
+   *   - Bumpable connection will be removed before adding new connection, or
+   *   - Connection will not be added.
+   * @param {Socket} socket - A socket object to add to connection list.
+   * @returns {boolean}     - True if successful, false if there's no room.
+   */
   maybeAddConnection(socket) {
-    if (this.connections.size < this.maxConnection) {
+    if (this.connections.size < this.maxConnections) {
       logger.trace(
         getSocketInfo(socket),
         "Adding new socket to connection list because there's room",
       );
       this.addConnection(socket);
       return true;
-    } else if (this.connections.size == this.maxConnection) {
+    } else if (this.connections.size == this.maxConnections) {
       logger.trace(
         getSocketInfo(socket),
         "Trying to bump oldest if older than 10 seconds",
@@ -49,6 +68,10 @@ export default class ConnectionManager {
     }
   }
 
+  /**
+   * Try to remove a connection if there is one older than 10 seconds.
+   * @returns {boolean} - True if a connection was removed, false if not.
+   */
   maybeRemoveOldest() {
     logger.trace("Attempting to remove oldest connection.");
     const sortedConnections = [...this.connections.entries()].sort(
@@ -67,12 +90,20 @@ export default class ConnectionManager {
     }
   }
 
+  /**
+   * Immediately add connection without checking if there's room.
+   * @param {Socket} socket - Socket to add immediately.
+   */
   addConnection(socket) {
     logger.debug(getSocketInfo(socket), "Add connection to list.");
     this.connections.set(socket, {
       createdAt: Date.now(),
     });
   }
+  /**
+   * Immediately remove connection and notify using this.deleteCallback.
+   * @param {Socket} socket - Socket to remove.
+   */
   removeConnection(socket) {
     logger.debug(getSocketInfo(socket), "Remove connection from list.");
     this.deleteCallback(socket);

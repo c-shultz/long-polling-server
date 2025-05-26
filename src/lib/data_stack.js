@@ -3,13 +3,25 @@ import EventEmitter from "node:events";
 
 const MAX_STACK_SIZE = 100;
 
+/**
+ *
+ */
 export default class DataStack {
+  /**
+   *
+   * @param maxConnections
+   */
   constructor(maxConnections) {
     this.stack = [];
     this.emitter = new EventEmitter();
     this.emitter.setMaxListeners(maxConnections);
   }
 
+  /**
+   *
+   * @param val
+   * @param pushCallback
+   */
   requestPush(val, pushCallback) {
     logger.debug(
       {
@@ -31,6 +43,10 @@ export default class DataStack {
     }
   }
 
+  /**
+   *
+   * @param popCallback
+   */
   requestPop(popCallback) {
     logger.debug(
       { stackSize: this.stack.length },

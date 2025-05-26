@@ -1,7 +1,13 @@
 import { logger } from "./logger.js";
 import { decodeHeader, FRAME_TYPE, trimHeader } from "./utils.js";
 
+/**
+ *
+ */
 export default class FrameDecoder {
+  /**
+   *
+   */
   constructor() {
     this.status = {
       type: FRAME_TYPE.UNKNOWN,
@@ -11,6 +17,10 @@ export default class FrameDecoder {
     this.payloadCursor = 0; // Next payload write position for incoming data.
   }
 
+  /**
+   *
+   * @param buffer
+   */
   handleData(buffer) {
     if (!Buffer.isBuffer(buffer)) {
       throw new TypeError(
