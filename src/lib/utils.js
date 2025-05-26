@@ -1,8 +1,10 @@
+import { Socket } from "node:net";
+
 const BITMASK_HEADER_TYPE = 0x80; // MSb mask for header type determination. '0' is push, '1' is pop.
 const BITMASK_PAYLOAD_SIZE = 0x7f; // Mask for 7 least significants bits (payload size).
-const HEADER_SIZE_BYTES = 1;
-const RESPONSE_BUSY = 0xff;
-const RESPONSE_PUSH = 0x00;
+const HEADER_SIZE_BYTES = 1; // Size of frame header in bytes.
+const RESPONSE_BUSY = 0xff; // Byte to send for busy response.
+const RESPONSE_PUSH = 0x00; // Byte to send to acknowledge successful push.
 
 export const FRAME_TYPE = {
   UNKNOWN: "Unknown", // Header type not known.
@@ -11,22 +13,25 @@ export const FRAME_TYPE = {
 };
 
 /**
- *
+ * Gets data to send as a response when there's no more connections available.
+ * @returns {Uint8Array} - Response containing busy byte.
  */
 export function getResponseBusy() {
   return new Uint8Array([RESPONSE_BUSY]);
 }
 
 /**
- *
+ * Gets data to send as a response acknowledging push.
+ * @returns {Uint8Array} - Response containing push byte.
  */
 export function getResponsePush() {
   return new Uint8Array([RESPONSE_PUSH]);
 }
 
 /**
- *
- * @param payload
+ * Build pop response by adding header with payload size.
+ * @param {Buffer} payload - Data payload WITHOUT header.
+ * @returns {Buffer} .     - Full data payload WITH header.
  */
 export function getResponsePop(payload) {
   const maxPayloadLength = BITMASK_PAYLOAD_SIZE;
@@ -45,8 +50,9 @@ export function getResponsePop(payload) {
 }
 
 /**
- *
- * @param buffer
+ * Parse header to determine request type.
+ * @param {Buffer} buffer - Full incoming packet including header plus (optionally) data.
+ * @returns {object}      - Type (as FRAME_TYPE) and (optionally) header size.
  */
 export function decodeHeader(buffer) {
   if (!Buffer.isBuffer(buffer)) {
@@ -84,8 +90,9 @@ export function decodeHeader(buffer) {
 }
 
 /**
- *
- * @param buffer
+ * Trim off header byte
+ * @param {Buffer} buffer - Buffer to modify.
+ * @returns {Buffer}      - New buffer object pointing to only payload data bytes.
  */
 export function trimHeader(buffer) {
   if (!Buffer.isBuffer(buffer)) {
@@ -98,9 +105,10 @@ export function trimHeader(buffer) {
 }
 
 /**
- *
- * @param socket
+ * Determine if socket is fully open (read+write).
+ * @param {Socket} socket - A socket object to check.
+ * @returns {boolean}     - True if socket is fully open.
  */
-export function socketFullyOpen(socket) {
+export function isSocketFullyOpen(socket) {
   return socket.readable && socket.writable;
 }
