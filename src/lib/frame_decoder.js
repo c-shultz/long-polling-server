@@ -1,3 +1,4 @@
+import { logger } from "./logger.js";
 import { decodeHeader, FRAME_TYPE, trimHeader } from "./utils.js";
 
 export default class FrameDecoder {
@@ -23,14 +24,18 @@ export default class FrameDecoder {
     switch (this.status.type) {
       case FRAME_TYPE.UNKNOWN: {
         // Decode header and handle frame type change accordingly.
+        logger.debug("Starting to decode new frame.");
+        logger.trace(buffer);
         const { headerType, payloadSize } = decodeHeader(incomingData);
         switch (headerType) {
           case FRAME_TYPE.PUSH:
+            logger.debug("New frame is a push request.");
             this.payload = Buffer.allocUnsafe(payloadSize);
             incomingData = trimHeader(incomingData);
             this.status.type = FRAME_TYPE.PUSH;
             break;
           case FRAME_TYPE.POP:
+            logger.debug("New frame is a pop request.");
             this.status.type = FRAME_TYPE.POP;
             this.status.complete = true;
             return {
@@ -43,6 +48,7 @@ export default class FrameDecoder {
       // falls through
       case FRAME_TYPE.PUSH:
         // Copy data into payload and check for completion
+        logger.debug("Getting payload for push request.");
         incomingData.copy(this.payload, this.payloadCursor);
         this.payloadCursor += incomingData.length;
         if (this.payloadCursor > this.payload.length) {
@@ -50,6 +56,7 @@ export default class FrameDecoder {
             "Unexpected error. Payload cursor extends past buffer length",
           );
         } else if (this.payloadCursor == this.payload.length) {
+          logger.debug("Finished getting data for push request.");
           this.status.complete = true;
           return {
             status: this.status,
@@ -58,7 +65,7 @@ export default class FrameDecoder {
         }
 
         break;
-      case FRAME_TYPE.POP: // POP should have been handled during first data event, so this is unexpected.
+      case FRAME_TYPE.POP: // POP should have been handled during first data event since it's only a byte, so this is unexpected.
       default:
         throw new Error(
           "Unexpcted new data. Frame already flagged as complete.",

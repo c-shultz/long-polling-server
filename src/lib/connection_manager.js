@@ -1,3 +1,4 @@
+import { logger, getSocketInfo } from "./logger.js";
 const TEN_SECONDS_IN_MS = 10000;
 
 export default class ConnectionManager {
@@ -9,28 +10,47 @@ export default class ConnectionManager {
 
   maybeAddConnection(socket) {
     if (this.connections.size < this.maxConnection) {
+      logger.trace(
+        getSocketInfo(socket),
+        "Adding new socket to connection list because there's room",
+      );
       this.addConnection(socket);
       return true;
     } else if (this.connections.size == this.maxConnection) {
-      console.log("Bump the oldest if over ten seconds old.");
+      logger.trace(
+        getSocketInfo(socket),
+        "Trying to bump oldest if older than 10 seconds",
+      );
       if (this.maybeRemoveOldest()) {
-        console.log("Adding new connection after bump.");
+        logger.trace(
+          getSocketInfo(socket),
+          "Adding new connection after bumping oldest.",
+        );
         // Successfully found an eligible old connection to bump off.
         this.addConnection(socket);
         return true;
       } else {
-        console.log("Nothing to bump, so not adding new connection.");
+        logger.trace(
+          getSocketInfo(socket),
+          "Can't add new socket to connection list because there's nothing to bump.",
+        );
         // Couldn't add
         return false;
       }
     } else {
-      console.log("No room here, friends.");
+      logger.trace(
+        {
+          socket: getSocketInfo(socket),
+          currentConnections: this.connections.size,
+        },
+        "No room for new connections",
+      );
       return false;
     }
   }
 
   maybeRemoveOldest() {
-    console.log("Trying to remove oldest");
+    logger.trace("Attempting to remove oldest connection.");
     const sortedConnections = [...this.connections.entries()].sort(
       ([, aProps], [, bProps]) => aProps.createdAt - bProps.createdAt,
     );
@@ -38,26 +58,23 @@ export default class ConnectionManager {
     const [oldestConnection, connectionProps] = oldestElement;
 
     if (Date.now() - connectionProps.createdAt >= TEN_SECONDS_IN_MS) {
+      logger.trace("Successfully removed oldest connection.");
       this.removeConnection(oldestConnection);
       return true;
     } else {
-      console.log("Nothing older than 10 seconds");
+      logger.trace("No old enough connection to remove.");
       return false;
     }
   }
 
   addConnection(socket) {
-    console.log(
-      "Add connection to list for: ",
-      socket.remoteAddress,
-      socket.remotePort,
-    );
+    logger.debug(getSocketInfo(socket), "Add connection to list.");
     this.connections.set(socket, {
       createdAt: Date.now(),
     });
   }
   removeConnection(socket) {
-    console.log("Remove connection from list");
+    logger.debug(getSocketInfo(socket), "Remove connection from list.");
     this.deleteCallback(socket);
     this.connections.delete(socket);
   }

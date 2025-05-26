@@ -1,3 +1,4 @@
+import { logger } from "./logger.js";
 import EventEmitter from "node:events";
 
 const MAX_STACK_SIZE = 100;
@@ -10,14 +11,20 @@ export default class DataStack {
   }
 
   requestPush(val, pushCallback) {
-    console.log("Request to push to stack. Stack size: " + this.stack.length);
+    logger.debug(
+      {
+        stackSize: this.stack.length,
+        data: val,
+      },
+      "Request to push to stack.",
+    );
     if (this.stack.length < MAX_STACK_SIZE) {
-      console.log("Room on stack");
+      logger.debug("Pushing since there's on the stack.");
       this.stack.push(val);
       pushCallback();
       this.emitter.emit("push");
     } else {
-      console.log("No room on stack");
+      logger.debug("Full stack, so we'll wait for a pop event.");
       const queuedCallback = () => this.requestPush(val, pushCallback);
       this.emitter.on("pop", queuedCallback);
       return () => this.emitter.removeListener("pop", queuedCallback);
@@ -25,13 +32,16 @@ export default class DataStack {
   }
 
   requestPop(popCallback) {
-    console.log("Request to pop from stack. Stack size: " + this.stack.length);
+    logger.debug(
+      { stackSize: this.stack.length },
+      "Request to pop from stack.",
+    );
     if (this.stack.length > 0) {
-      console.log("Data on stack.");
+      logger.debug("Popping since there's something on the stack.");
       popCallback(this.stack.pop());
       this.emitter.emit("pop");
     } else {
-      console.log("Stack empty.");
+      logger.debug("Stack empty, nothing to pop so we'll wait for a push.");
       const queuedCallback = () => this.requestPop(popCallback);
       this.emitter.on("push", queuedCallback);
       return () => this.emitter.removeListener("push", queuedCallback);
