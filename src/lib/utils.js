@@ -1,13 +1,13 @@
-const BITMASK_HEADER_TYPE = 0x80; //MSb mask for header type determination. '0' is push, '1' is pop.
-const BITMASK_PAYLOAD_SIZE = 0x7f; //Mask for 7 least significants bits (payload size).
+const BITMASK_HEADER_TYPE = 0x80; // MSb mask for header type determination. '0' is push, '1' is pop.
+const BITMASK_PAYLOAD_SIZE = 0x7f; // Mask for 7 least significants bits (payload size).
 const HEADER_SIZE_BYTES = 1;
 const RESPONSE_BUSY = 0xff;
 const RESPONSE_PUSH = 0x00;
 
 export const FRAME_TYPE = {
-  UNKNOWN: "Unknown", //Header type not known.
-  POP: "PopRequest", //Header indicates pop.
-  PUSH: "PushRequest", //Header indicates push (and includes payload bits).
+  UNKNOWN: "Unknown", // Header type not known.
+  POP: "PopRequest", // Header indicates pop.
+  PUSH: "PushRequest", // Header indicates push (and includes payload bits).
 };
 
 export function getResponseBusy() {
@@ -30,7 +30,7 @@ export function getResponsePop(payload) {
     throw new RangeError("Invalid payload size.");
   }
 
-  //Prepend payload header
+  // Prepend payload header
   return Buffer.concat([new Uint8Array([payload.length]), payload]);
 }
 
@@ -56,11 +56,11 @@ export function decodeHeader(buffer) {
       );
     }
     if (parsedSize > BITMASK_PAYLOAD_SIZE) {
-      //Check maximum for the sake of completness. Bitmask should prevent this.
+      // Check maximum for the sake of completness. Bitmask should prevent this.
       throw new RangeError("Unexpected parsing error. Payload too large.");
     }
   } else {
-    parsedSize = null; //Just set to null for pop since it's ignored.
+    parsedSize = null; // Just set to null for pop since it's ignored.
   }
 
   return {

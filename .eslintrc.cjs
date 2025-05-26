@@ -30,5 +30,25 @@ module.exports = {
       "error",
       { newIsCap: true, capIsNew: false },
     ],
+
+    // Force space after start of comment
+    "spaced-comment": ["error", "always", {
+      "line": {
+          "markers": ["/"],
+          "exceptions": ["-", "+"]
+      },
+      "block": {
+          "markers": ["!"],
+          "exceptions": ["*"],
+          "balanced": true
+      }
+    }],
+
+    // Require doc blocks.
+    'valid-jsdoc':  ["error",
+      { "requireReturn": true },
+      { "requireReturnType": true },
+      { "requireParamType": true },
+    ]
   },
 };

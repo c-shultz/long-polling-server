@@ -8,7 +8,7 @@ export default class FrameDecoder {
       complete: false,
     };
     this.payload = null;
-    this.payloadCursor = 0; //Next payload write position for incoming data.
+    this.payloadCursor = 0; // Next payload write position for incoming data.
   }
 
   handleData(buffer) {

@@ -19,7 +19,7 @@ const dataStack = new DataStack(MAX_CONNECTIONS);
 let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
   if (socketFullyOpen(socket)) {
     // Handle sockets that get deleted by the connection manager (because they are getting bumped off)
-    socket.destroy(); //No busy-state signal needed since this is just getting bumped.
+    socket.destroy(); // No busy-state signal needed since this is just getting bumped.
   }
 });
 
@@ -36,7 +36,7 @@ const server = net.createServer((socket) => {
   if (!connectionManager.maybeAddConnection(socket)) {
     logger.debug(getSocketInfo(socket), "No room for socket");
     if (socketFullyOpen(socket)) {
-      socket.end(getResponseBusy()); //Send busy response and close socket.
+      socket.end(getResponseBusy()); // Send busy response and close socket.
     }
     logger.debug(
       getSocketInfo(socket),
@@ -70,7 +70,7 @@ const server = net.createServer((socket) => {
         case FRAME_TYPE.POP:
           cancelPopRequest = dataStack.requestPop((payload) => {
             logger.trace(getSocketInfo(socket), "Popping data off for client");
-            socket.end(getResponsePop(payload)); //Send pop response and close socket.
+            socket.end(getResponsePop(payload)); // Send pop response and close socket.
           });
           break;
         case FRAME_TYPE.PUSH:
@@ -79,14 +79,14 @@ const server = net.createServer((socket) => {
               getSocketInfo(socket),
               "Pushing data onto stack for client",
             );
-            socket.end(getResponsePush()); //Send push confirm and close socket.
+            socket.end(getResponsePush()); // Send push confirm and close socket.
           });
           break;
       }
     }
     socket.on("end", () => {
       logger.debug(getSocketInfo(socket), "Socket end event");
-      //A little cleanup in case connections closed before queued pushes/pops could be serviced.
+      // A little cleanup in case connections closed before queued pushes/pops could be serviced.
       if (typeof cancelPopRequest === "function") {
         cancelPopRequest();
         logger.debug(
@@ -106,7 +106,7 @@ const server = net.createServer((socket) => {
       logger.error(err, "Socket error.");
     });
 
-    //Remove connection for any possible full/partial socket closures.
+    // Remove connection for any possible full/partial socket closures.
     const removeOnClose = () => {
       logger.trace(
         getSocketInfo(socket),
