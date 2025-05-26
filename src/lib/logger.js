@@ -11,13 +11,6 @@ const streams = [
   { level: "info", stream: fs.createWriteStream(LOG_FILE_APP) }, // For 'info'.
 ];
 
-const prettyTransport = {
-  target: "pino-pretty", // the module name
-  options: {
-    colorize: true,
-  },
-};
-
 export const logger = pino(
   {
     level: process.env.LOG_MODE || "info",
