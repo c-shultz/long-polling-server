@@ -58,9 +58,7 @@ const server = net.createServer((socket) => {
   let frameDecoder = new FrameDecoder();
   socket.on("data", (data) => {
     let cancelPopRequest, cancelPushRequest;
-    logger.trace([getSocketInfo(socket), data], "Got some data from client.");
     if (!isSocketFullyOpen(socket)) {
-      logger.trace(getSocketInfo(socket), "Socket not readable or writable.");
       return;
     }
 
@@ -79,16 +77,11 @@ const server = net.createServer((socket) => {
       switch (status.type) {
         case FRAME_TYPE.POP:
           cancelPopRequest = dataStack.requestPop((payload) => {
-            logger.trace(getSocketInfo(socket), "Popping data off for client");
             socket.end(getResponsePop(payload)); // Send pop response and close socket.
           });
           break;
         case FRAME_TYPE.PUSH:
           cancelPushRequest = dataStack.requestPush(payload, () => {
-            logger.trace(
-              getSocketInfo(socket),
-              "Pushing data onto stack for client",
-            );
             socket.end(getResponsePush()); // Send push confirm and close socket.
           });
           break;
@@ -116,10 +109,6 @@ const server = net.createServer((socket) => {
 
     // Remove connection for any possible full/partial socket closures.
     const removeOnClose = () => {
-      logger.trace(
-        getSocketInfo(socket),
-        "Cleaning up connection records for socket.",
-      );
       connectionManager.removeConnection(socket);
     };
     ["close", "end", "finish"].forEach((eventName) => {
