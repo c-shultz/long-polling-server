@@ -31,7 +31,9 @@ export default class FrameDecoder {
       );
     }
     if (this.status.complete) {
-      throw new Error("Unexpcted new data. Frame already flagged as complete.");
+      throw new Error(
+        "Unexpected new data. Frame already flagged as complete.",
+      );
     }
     let incomingData = buffer;
     switch (this.status.type) {
@@ -63,6 +65,7 @@ export default class FrameDecoder {
         // Copy data into payload and check for completion
         logger.debug("Getting payload for push request.");
         incomingData.copy(this.payload, this.payloadCursor);
+
         this.payloadCursor += incomingData.length;
         if (this.payloadCursor > this.payload.length) {
           throw new RangeError(
@@ -81,7 +84,7 @@ export default class FrameDecoder {
       case FRAME_TYPE.POP: // POP should have been handled during first data event since it's only a byte, so this is unexpected.
       default:
         throw new Error(
-          "Unexpcted new data. Frame already flagged as complete.",
+          "Unexpected new data. Frame already flagged as complete.",
         );
     }
     return {
