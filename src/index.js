@@ -25,12 +25,14 @@ events.defaultMaxListeners = MAX_CONNECTIONS;
 logger.info("Starting up.");
 const dataStack = new DataStack();
 let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
+  // Callback for old connections that get bumped.
   if (isSocketFullyOpen(socket)) {
     // Handle sockets that get deleted by the connection manager (because they are getting bumped off)
     socket.destroy(); // No busy-state signal needed since this is just getting bumped.
   }
 });
 
+// Start server, and start listening for incoming connections.
 const server = net.createServer((socket) => {
   logger.debug(
     "Client connection attempt:",
@@ -55,7 +57,7 @@ const server = net.createServer((socket) => {
   }
 
   // Handle incoming data events (frames may come all at once or be split up).
-  let frameDecoder = new FrameDecoder();
+  const frameDecoder = new FrameDecoder();
   socket.on("data", (data) => {
     let cancelPopRequest, cancelPushRequest;
     if (!isSocketFullyOpen(socket)) {
