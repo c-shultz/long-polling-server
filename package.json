@@ -10,19 +10,14 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js --fix",
     "test:system": "ruby tests/system/stack-test.rb",
-    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=tests/jest.config.cjs"
+    "test:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=tests/jest.config.cjs"
   },
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/c-shultz/stack-server-long-polling.git"
+    "type": "git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/c-shultz/stack-server-long-polling/issues"
-  },
-  "homepage": "https://github.com/c-shultz/stack-server-long-polling#readme",
   "devDependencies": {
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
