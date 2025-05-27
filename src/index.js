@@ -64,7 +64,7 @@ const server = net.createServer((socket) => {
       return;
     }
 
-    // Try to parse incoming data, or just ignore client if there's decoding error.
+    // Try to parse incoming data, or just ignore client if there's a decoding error.
     let status, payload;
     try {
       ({ status, payload = null } = frameDecoder.handleData(data));
@@ -74,7 +74,7 @@ const server = net.createServer((socket) => {
       return;
     }
 
-    // If we've finished receiving all data for this connection.
+    // Act on push/pop when finished receiving all data for this connection.
     if (status.complete) {
       switch (status.type) {
         case FRAME_TYPE.POP:
