@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "outDir": "dist",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "allowJs": true,        // lets you keep running JS while migrating
+    "checkJs": true,        // type-check JS (use // @ts-check per-file if you prefer)
+    "strict": false,        // tighten later
+    "noImplicitAny": false  // tighten later
+  },
+  "include": ["src", "tests", "types.d.ts"]
+}
