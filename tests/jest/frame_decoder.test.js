@@ -1,4 +1,4 @@
-import { describe, expect, beforeEach, test } from "@jest/globals";
+import { describe, expect, beforeEach, test } from "vitest";
 import FrameDecoder from "../../src/lib/frame_decoder.js";
 import { FRAME_TYPE } from "../../src/lib/utils.js";
 

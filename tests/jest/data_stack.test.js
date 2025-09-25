@@ -1,5 +1,6 @@
-import { describe, expect, beforeEach, test } from "@jest/globals";
+import { describe, expect, beforeEach, test } from "vitest";
 import DataStack from "../../src/lib/data_stack.js";
+
 
 describe("DataStack", () => {
   let dataStack;
@@ -9,21 +10,20 @@ describe("DataStack", () => {
     dataStack = new DataStack();
   });
 
-  test("Push before pop.", (done) => {
-    dataStack.requestPush(buf1, () => {
-      // Pop right after push.
-      dataStack.requestPop((poppedBuf) => {
-        expect(poppedBuf).toBe(buf1);
-      });
-      done();
-    });
+  let popP = () => new Promise( (resolve) => dataStack.requestPop(resolve));
+  let pushP = (buf) => new Promise( (resolve) => dataStack.requestPush(buf, resolve));
+
+  test("Push before pop.", async (done) => {
+    pushP(buf1);
+    const poppedBuf = await popP();
+    expect(poppedBuf).toBe(buf1);
   });
 
-  test("Pop then push.", (done) => {
-    dataStack.requestPop((poppedBuf) => {
-      expect(poppedBuf).toBe(buf1);
-      done();
-    });
-    dataStack.requestPush(buf1, () => {});
+  test("Pop then push.", async (done) => {
+    const poppingPromise = popP();
+    await pushP(buf1);
+    const poppedBuf = await poppingPromise;
+    expect(poppedBuf).toBe(buf1);
+
   });
 });

@@ -1,4 +1,4 @@
-import { jest, describe, expect, beforeEach, test } from "@jest/globals";
+import { jest, describe, expect, beforeEach, test, vi } from "vitest";
 import { advanceBy, clear } from "jest-date-mock";
 import ConnectionManager from "../../src/lib/connection_manager.js";
 
@@ -6,7 +6,7 @@ const MAX_CONNECTIONS = 100;
 
 describe("ConnectionManager#maybeAddConnection", () => {
   let connectionManager;
-  const mockDeleteCallback = jest.fn();
+  const mockDeleteCallback = vi.fn();
 
   beforeEach(() => {
     connectionManager = new ConnectionManager(

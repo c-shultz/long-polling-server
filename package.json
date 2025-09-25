@@ -9,7 +9,7 @@
     "debug": "LOG_MODE=debug node --inspect src/index.js",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js --fix",
-    "test:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=tests/jest.config.cjs"
+    "test:vitest": "vitest --config=tests/vitest.config.js"
   },
   "repository": {
     "type": "git"
