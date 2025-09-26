@@ -8,10 +8,10 @@ const RESPONSE_PUSH : number = 0x00; // Byte to send to acknowledge successful p
 
 export type FrameType = "unknown" | "pop" | "push";
 
-export interface RequestHeader {
-  headerType: FrameType,
-  payloadSize: number
-}
+export type RequestHeader = 
+  | { headerType: "unknown"; payloadSize: null}
+  | { headerType: "pop"; payloadSize: null}
+  | { headerType: "push"; payloadSize: number}
 
 /**
  * Gets data to send as a response when there's no more connections available.
@@ -65,7 +65,7 @@ export function decodeHeader(buffer : Buffer) : RequestHeader {
     throw new RangeError("Header can't be parsed on empty Buffer");
   }
   const headerByte : number = buffer.readUint8(0);
-  let parsedSize : number;
+  let parsedSize : number | null;
   let parsedType : FrameType =
     (BITMASK_HEADER_TYPE & headerByte) == 0 ? "push" : "pop";
 
@@ -80,14 +80,17 @@ export function decodeHeader(buffer : Buffer) : RequestHeader {
       // Check maximum for the sake of completness. Bitmask should prevent this.
       throw new RangeError("Unexpected parsing error. Payload too large.");
     }
+    return {
+      headerType: "push",
+      payloadSize: parsedSize,
+    };
   } else {
-    parsedSize = null; // Just set to null for pop since it's ignored.
+    return {
+      headerType: parsedType,
+      payloadSize: null,
+    };
   }
 
-  return {
-    headerType: parsedType,
-    payloadSize: parsedSize,
-  };
 }
 
 /**

@@ -30,11 +30,11 @@ export const logger = pino(
  */
 export function getSocketInfo(socket : Socket) {
   let address = "unknown";
-  let port = "unknown";
-  if ("remoteAddress" in socket) {
+  let port = "unknown"; 
+  if ("remoteAddress" in socket && socket.remoteAddress !== undefined) {
     address = socket.remoteAddress;
   }
-  if ("remotePort" in socket) {
+  if ("remotePort" in socket && socket.remotePort !== undefined) {
     port = socket.remotePort.toString();
   }
   return {

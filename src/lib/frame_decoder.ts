@@ -8,7 +8,7 @@ export interface FrameStatus {
 
 export interface DataResult {
   status: FrameStatus,
-  payload: Buffer
+  payload?: Buffer
 }
 
 /**
@@ -16,7 +16,7 @@ export interface DataResult {
  */
 export default class FrameDecoder {
   status: FrameStatus;
-  payload: Buffer
+  payload: Buffer;
   payloadCursor: number;
   /**
    * Constructor.
@@ -26,8 +26,8 @@ export default class FrameDecoder {
       type: "unknown", // Start out as unknown, and will be set to push/pop depending on header.
       complete: false, // To be set to true after all data is received from frame (may come all at once or not).
     };
-    this.payload = null;
     this.payloadCursor = 0; // Next payload write position for incoming data.
+    this.payload = Buffer.from([]);
   }
 
   /**
@@ -68,7 +68,6 @@ export default class FrameDecoder {
             this.status.complete = true;
             return {
               status: this.status,
-              payload: null
             };
           default:
             throw new Error("Unexpcted frame header error.");
@@ -102,8 +101,7 @@ export default class FrameDecoder {
         );
     }
     return {
-      status: this.status,
-      payload: null
+      status: this.status
     };
   }
 }

@@ -19,7 +19,7 @@ export default class ConnectionManager {
    * @param {number} maxConnections   - Maximum number allowed connections.
    * @param {Function} deleteCallback - Callback for when old connections are bumped.
    */
-  constructor(maxConnections, deleteCallback) {
+  constructor(maxConnections : number, deleteCallback : Function) {
     this.connections = new Map();
     this.maxConnections = maxConnections;
     this.deleteCallback = deleteCallback;
@@ -103,7 +103,7 @@ export default class ConnectionManager {
    * This should not be called without first checking for connection space.
    * @param {Socket} socket - Socket to add immediately.
    */
-  private addConnection(socket) {
+  private addConnection(socket : Socket) : void {
     logger.debug(getSocketInfo(socket), "Add connection to list.");
     this.connections.set(socket, {
       createdAt: Date.now(),
@@ -113,7 +113,7 @@ export default class ConnectionManager {
    * Immediately remove connection and notify using this.deleteCallback.
    * @param {Socket} socket - Socket to remove.
    */
-  removeConnection(socket) {
+  removeConnection(socket : Socket) : void {
     logger.debug(getSocketInfo(socket), "Remove connection from list.");
     this.deleteCallback(socket);
     this.connections.delete(socket);

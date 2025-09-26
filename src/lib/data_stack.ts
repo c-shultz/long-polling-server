@@ -7,6 +7,8 @@ const MAX_STACK_SIZE = 100;
  * Class to create/manage stack.
  */
 export default class DataStack {
+  stack: Array<Buffer>;
+  emitter: EventEmitter;
   /**
    * Constructor.
    */
@@ -28,7 +30,7 @@ export default class DataStack {
    * @param {Function} pushCallback  - Callback for successful push.
    * @returns {Function | undefined} - Callback to cancel push request.
    */
-  requestPush(val, pushCallback) {
+  requestPush(val: Buffer, pushCallback : Function) : Function | undefined {
     logger.debug(
       {
         stackSize: this.stack.length,
@@ -62,7 +64,7 @@ export default class DataStack {
    * @param {Function} popCallback   - Callback for successful pop.
    * @returns {Function | undefined} - Callback to cancel pop request.
    */
-  requestPop(popCallback) {
+  requestPop(popCallback: Function) : Function | undefined {
     logger.debug(
       { stackSize: this.stack.length },
       "Request to pop from stack.",

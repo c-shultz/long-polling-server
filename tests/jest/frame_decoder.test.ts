@@ -40,7 +40,8 @@ describe("FrameDecoder#handleData", () => {
         complete: true,
       },
     });
-    expect(result.payload.readUint8(0)).toBe(dataBytes[0]);
+    expect(result.payload).not.toBeNull();
+    expect(result.payload!.readUint8(0)).toBe(dataBytes[0]);
   });
 
   test("Invalid push request length throws error.", () => {

@@ -12,10 +12,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
-    "allowJs": true,        // lets you keep running JS while migrating
     "checkJs": true,        // type-check JS (use // @ts-check per-file if you prefer)
-    "strict": false,        // tighten later
-    "noImplicitAny": false  // tighten later
+    "strict": true,         // tighten later
+    "noImplicitAny": true  // tighten later
   },
   "include": ["src", "tests", "types.d.ts"]
 }

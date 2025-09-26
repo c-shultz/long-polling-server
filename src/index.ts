@@ -24,7 +24,7 @@ events.defaultMaxListeners = MAX_CONNECTIONS;
 
 logger.info("Starting up.");
 const dataStack = new DataStack();
-let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
+let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket : Socket) => {
   // Callback for old connections that get bumped.
   if (isSocketFullyOpen(socket)) {
     // Handle sockets that get deleted by the connection manager (because they are getting bumped off)
@@ -60,7 +60,8 @@ const server = net.createServer((socket : Socket) => {
   // Handle incoming data events (frames may come all at once or be split up).
   const frameDecoder = new FrameDecoder();
   socket.on("data", (data) => {
-    let cancelPopRequest, cancelPushRequest;
+    let cancelPopRequest : Function | undefined;
+    let cancelPushRequest : Function | undefined;
     if (!isSocketFullyOpen(socket)) {
       return;
     }
@@ -79,14 +80,16 @@ const server = net.createServer((socket : Socket) => {
     if (p_data.status.complete) {
       switch (p_data.status.type) {
         case "pop":
-          cancelPopRequest = dataStack.requestPop((payload) => {
+          cancelPopRequest = dataStack.requestPop((payload : Buffer) => {
             socket.end(getResponsePop(payload)); // Send pop response and close socket.
           });
           break;
         case "push":
-          cancelPushRequest = dataStack.requestPush(p_data.payload, () => {
-            socket.end(getResponsePush()); // Send push confirm and close socket.
-          });
+          if (p_data.payload !== undefined) {
+            cancelPushRequest = dataStack.requestPush(p_data.payload, () => {
+              socket.end(getResponsePush()); // Send push confirm and close socket.
+            });
+          }
           break;
       }
     }
@@ -94,14 +97,14 @@ const server = net.createServer((socket : Socket) => {
     // A little cleanup in case connections closed before queued pushes/pops could be serviced.
     socket.on("end", () => {
       logger.debug(getSocketInfo(socket), "Socket end event");
-      if (typeof cancelPopRequest === "function") {
+      if (cancelPopRequest !== undefined) {
         cancelPopRequest();
         logger.debug(
           getSocketInfo(socket),
           "Cancelling pending pop request for socket",
         );
       }
-      if (typeof cancelPushRequest === "function") {
+      if (cancelPushRequest !== undefined) {
         cancelPushRequest();
         logger.debug(
           getSocketInfo(socket),
