@@ -119,9 +119,9 @@ const server = net.createServer((socket : Socket) => {
     });
 
     // Log other errors.
-    socket.on("error", (err) => {
+    socket.on("error", (err : NodeJS.ErrnoException) => {
       // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
-      if (err.syscall === "ECONNRESET") {
+      if (err.code === "ECONNRESET") {
         logger.error(err, "Client disconnected.");
       } else {
         logger.fatal(err);

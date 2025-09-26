@@ -1,5 +1,4 @@
 import { describe, expect, beforeEach, test, vi } from "vitest";
-import { advanceBy, clear } from "jest-date-mock";
 import { Socket } from "node:net";
 import ConnectionManager from "../../src/lib/connection_manager.js";
 
@@ -10,6 +9,7 @@ describe("ConnectionManager#maybeAddConnection", () => {
   const mockDeleteCallback = vi.fn();
 
   beforeEach(() => {
+    vi.useFakeTimers()
     connectionManager = new ConnectionManager(
       MAX_CONNECTIONS,
       mockDeleteCallback,
@@ -67,7 +67,7 @@ describe("ConnectionManager#maybeAddConnection", () => {
     }
     expect(connectionManager.connections.size).toBe(MAX_CONNECTIONS);
 
-    advanceBy(11000); // Advance date mock by 11 seconds.
+    vi.advanceTimersByTime(11000);
 
     const beyondMaxSocket = {} as Socket;
     // Add one connection beyond max:
@@ -78,6 +78,5 @@ describe("ConnectionManager#maybeAddConnection", () => {
     expect(connectionManager.connections.has(oldestMockSocket)).toBe(false);
     expect(mockDeleteCallback).toHaveBeenCalledWith(oldestMockSocket);
 
-    clear(); // Clear out date mock (Date.now() will return current time again).
   });
 });
