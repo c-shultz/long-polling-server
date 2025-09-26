@@ -1,22 +1,23 @@
 import { Socket } from "node:net";
 
-const BITMASK_HEADER_TYPE = 0x80; // MSb mask for header type determination. '0' is push, '1' is pop.
-const BITMASK_PAYLOAD_SIZE = 0x7f; // Mask for 7 least significants bits (payload size).
-const HEADER_SIZE_BYTES = 1; // Size of frame header in bytes.
-const RESPONSE_BUSY = 0xff; // Byte to send for busy response.
-const RESPONSE_PUSH = 0x00; // Byte to send to acknowledge successful push.
+const BITMASK_HEADER_TYPE : number = 0x80; // MSb mask for header type determination. '0' is push, '1' is pop.
+const BITMASK_PAYLOAD_SIZE : number = 0x7f; // Mask for 7 least significants bits (payload size).
+const HEADER_SIZE_BYTES : number = 1; // Size of frame header in bytes.
+const RESPONSE_BUSY : number = 0xff; // Byte to send for busy response.
+const RESPONSE_PUSH : number = 0x00; // Byte to send to acknowledge successful push.
 
-export const FRAME_TYPE = {
-  UNKNOWN: "Unknown", // Header type not known.
-  POP: "PopRequest", // Header indicates pop.
-  PUSH: "PushRequest", // Header indicates push (and includes payload bits).
-};
+export type FrameType = "unknown" | "pop" | "push";
+
+export interface RequestHeader {
+  headerType: FrameType,
+  payloadSize: number
+}
 
 /**
  * Gets data to send as a response when there's no more connections available.
  * @returns {Uint8Array} - Response containing busy byte.
  */
-export function getResponseBusy() {
+export function getResponseBusy() : Uint8Array {
   return new Uint8Array([RESPONSE_BUSY]);
 }
 
@@ -24,7 +25,7 @@ export function getResponseBusy() {
  * Gets data to send as a response acknowledging push.
  * @returns {Uint8Array} - Response containing push byte.
  */
-export function getResponsePush() {
+export function getResponsePush() : Uint8Array {
   return new Uint8Array([RESPONSE_PUSH]);
 }
 
@@ -33,8 +34,8 @@ export function getResponsePush() {
  * @param {Buffer} payload - Data payload WITHOUT header.
  * @returns {Buffer} .     - Full data payload WITH header.
  */
-export function getResponsePop(payload) {
-  const maxPayloadLength = BITMASK_PAYLOAD_SIZE;
+export function getResponsePop(payload : Buffer) : Buffer {
+  const maxPayloadLength : number = BITMASK_PAYLOAD_SIZE;
 
   if (!Buffer.isBuffer(payload)) {
     throw new TypeError(
@@ -51,10 +52,10 @@ export function getResponsePop(payload) {
 
 /**
  * Parse header to determine request type.
- * @param {Buffer} buffer - Full incoming packet including header plus (optionally) data.
- * @returns {object}      - Type (as FRAME_TYPE) and (optionally) header size.
+ * @param {Buffer} buffer  - Full incoming packet including header plus (optionally) data.
+ * @returns {RequestHeader} - Request header data.
  */
-export function decodeHeader(buffer) {
+export function decodeHeader(buffer : Buffer) : RequestHeader {
   if (!Buffer.isBuffer(buffer)) {
     throw new TypeError(
       "Unexpected data encoding. Expected Buffer received " + typeof buffer,
@@ -63,12 +64,12 @@ export function decodeHeader(buffer) {
   if (buffer.length == 0) {
     throw new RangeError("Header can't be parsed on empty Buffer");
   }
-  const headerByte = buffer.readUint8(0);
-  let parsedSize;
-  let parsedType =
-    (BITMASK_HEADER_TYPE & headerByte) == 0 ? FRAME_TYPE.PUSH : FRAME_TYPE.POP;
+  const headerByte : number = buffer.readUint8(0);
+  let parsedSize : number;
+  let parsedType : FrameType =
+    (BITMASK_HEADER_TYPE & headerByte) == 0 ? "push" : "pop";
 
-  if (parsedType == FRAME_TYPE.PUSH) {
+  if (parsedType === "push") {
     parsedSize = BITMASK_PAYLOAD_SIZE & headerByte;
     if (parsedSize < 1) {
       throw new RangeError(
@@ -94,7 +95,7 @@ export function decodeHeader(buffer) {
  * @param {Buffer} buffer - Buffer to modify.
  * @returns {Buffer}      - New buffer object pointing to only payload data bytes.
  */
-export function trimHeader(buffer) {
+export function trimHeader(buffer : Buffer) : Buffer {
   if (!Buffer.isBuffer(buffer)) {
     throw new TypeError(
       "Unexpected data encoding. Expected Buffer received " + typeof buffer,
@@ -109,6 +110,6 @@ export function trimHeader(buffer) {
  * @param {Socket} socket - A socket object to check.
  * @returns {boolean}     - True if socket is fully open.
  */
-export function isSocketFullyOpen(socket) {
+export function isSocketFullyOpen(socket : Socket) : boolean {
   return socket.readable && socket.writable;
 }

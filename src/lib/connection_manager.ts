@@ -3,10 +3,17 @@ import { Socket } from "node:net";
 
 const TEN_SECONDS_IN_MS = 10000;
 
+interface ConnectionInfo {
+  createdAt: number
+}
+
 /**
  * Class to manage the addition and removal of connections.
  */
 export default class ConnectionManager {
+  connections: Map<Socket, ConnectionInfo>;
+  maxConnections: number;
+  deleteCallback: Function;
   /**
    * Constructor.
    * @param {number} maxConnections   - Maximum number allowed connections.
@@ -27,13 +34,13 @@ export default class ConnectionManager {
    * @param {Socket} socket - A socket object to add to connection list.
    * @returns {boolean}     - True if successful, false if there's no room.
    */
-  maybeAddConnection(socket) {
+  maybeAddConnection(socket : Socket) : boolean {
     if (this.connections.size < this.maxConnections) {
       logger.trace(
         getSocketInfo(socket),
         "Adding new socket to connection list because there's room",
       );
-      this.#addConnection(socket);
+      this.addConnection(socket);
       return true;
     } else if (this.connections.size == this.maxConnections) {
       logger.trace(
@@ -46,7 +53,7 @@ export default class ConnectionManager {
           "Adding new connection after bumping oldest.",
         );
         // Successfully found an eligible old connection to bump off.
-        this.#addConnection(socket);
+        this.addConnection(socket);
         return true;
       } else {
         logger.trace(
@@ -72,7 +79,7 @@ export default class ConnectionManager {
    * Try to remove a connection if there is one older than 10 seconds.
    * @returns {boolean} - True if a connection was removed, false if not.
    */
-  maybeRemoveOldest() {
+  maybeRemoveOldest() : boolean {
     logger.trace("Attempting to remove oldest connection.");
     const sortedConnections = [...this.connections.entries()].sort(
       ([, aProps], [, bProps]) => aProps.createdAt - bProps.createdAt,
@@ -96,7 +103,7 @@ export default class ConnectionManager {
    * This should not be called without first checking for connection space.
    * @param {Socket} socket - Socket to add immediately.
    */
-  #addConnection(socket) {
+  private addConnection(socket) {
     logger.debug(getSocketInfo(socket), "Add connection to list.");
     this.connections.set(socket, {
       createdAt: Date.now(),

@@ -1,16 +1,29 @@
 import { logger } from "./logger.js";
-import { decodeHeader, FRAME_TYPE, trimHeader } from "./utils.js";
+import { decodeHeader, FrameType, trimHeader } from "./utils.js";
+
+export interface FrameStatus {
+  type: FrameType,
+  complete: boolean
+}
+
+export interface DataResult {
+  status: FrameStatus,
+  payload: Buffer
+}
 
 /**
  * Class to decode and parse incoming push/pop requests.
  */
 export default class FrameDecoder {
+  status: FrameStatus;
+  payload: Buffer
+  payloadCursor: number;
   /**
    * Constructor.
    */
   constructor() {
     this.status = {
-      type: FRAME_TYPE.UNKNOWN, // Start out as unknown, and will be set to push/pop depending on header.
+      type: "unknown", // Start out as unknown, and will be set to push/pop depending on header.
       complete: false, // To be set to true after all data is received from frame (may come all at once or not).
     };
     this.payload = null;
@@ -24,7 +37,7 @@ export default class FrameDecoder {
    * @param {Buffer} buffer - Incoming data.
    * @returns {object}      - Status object containing decoded type, whether or not all data is received and (optionally) a full payload for push requests.
    */
-  handleData(buffer) {
+  handleData(buffer : Buffer) : DataResult {
     if (!Buffer.isBuffer(buffer)) {
       throw new TypeError(
         "Unexpected data encoding. Expected Buffer received " + typeof buffer,
@@ -37,31 +50,32 @@ export default class FrameDecoder {
     }
     let incomingData = buffer;
     switch (this.status.type) {
-      case FRAME_TYPE.UNKNOWN: {
+      case "unknown": {
         // Decode header and handle frame type change accordingly.
         logger.debug("Starting to decode new frame.");
         logger.trace(buffer);
         const { headerType, payloadSize } = decodeHeader(incomingData);
         switch (headerType) {
-          case FRAME_TYPE.PUSH:
+          case "push":
             logger.debug("New frame is a push request.");
             this.payload = Buffer.allocUnsafe(payloadSize);
             incomingData = trimHeader(incomingData);
-            this.status.type = FRAME_TYPE.PUSH;
+            this.status.type = "push";
             break;
-          case FRAME_TYPE.POP:
+          case "pop":
             logger.debug("New frame is a pop request.");
-            this.status.type = FRAME_TYPE.POP;
+            this.status.type = "pop";
             this.status.complete = true;
             return {
               status: this.status,
+              payload: null
             };
           default:
             throw new Error("Unexpcted frame header error.");
         }
       }
       // falls through
-      case FRAME_TYPE.PUSH:
+      case "push":
         // Copy data into payload and check for completion
         logger.debug("Getting payload for push request.");
         incomingData.copy(this.payload, this.payloadCursor);
@@ -81,7 +95,7 @@ export default class FrameDecoder {
         }
 
         break;
-      case FRAME_TYPE.POP: // POP should have been handled during first data event since it's only a byte, so this is unexpected.
+      case "pop": // POP should have been handled during first data event since it's only a byte, so this is unexpected.
       default:
         throw new Error(
           "Unexpected new data. Frame already flagged as complete.",
@@ -89,6 +103,7 @@ export default class FrameDecoder {
     }
     return {
       status: this.status,
+      payload: null
     };
   }
 }

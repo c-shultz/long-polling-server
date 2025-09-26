@@ -1,12 +1,11 @@
 import { describe, expect, beforeEach, test } from "vitest";
-import FrameDecoder from "../../src/lib/frame_decoder.js";
-import { FRAME_TYPE } from "../../src/lib/utils.js";
+import FrameDecoder, { DataResult } from "../../src/lib/frame_decoder.js";
 
 const PUSH_HEADER = 0x00;
 const POP_HEADER = 0x80;
 
 describe("FrameDecoder#handleData", () => {
-  let frameDecoder;
+  let frameDecoder : FrameDecoder;
 
   beforeEach(() => {
     frameDecoder = new FrameDecoder();
@@ -14,30 +13,30 @@ describe("FrameDecoder#handleData", () => {
 
   test("Unknown type before data", () => {
     expect(frameDecoder.status).toMatchObject({
-      type: FRAME_TYPE.UNKNOWN,
+      type: "unknown",
       complete: false,
     });
   });
 
   test("Pop request decoded.", () => {
-    const messageBuffer = Buffer(new Uint8Array([POP_HEADER]));
+    const messageBuffer = Buffer.from(new Uint8Array([POP_HEADER]));
     expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
       status: {
-        type: FRAME_TYPE.POP,
+        type: "pop",
         complete: true,
       },
     });
   });
 
   test("Valid push request decoded.", () => {
-    const dataBytes = [0x42];
-    const payloadLength = dataBytes.length; // Valid length will be same as dataBytes.
-    const header = PUSH_HEADER + payloadLength;
-    const messageBuffer = Buffer(new Uint8Array([header].concat(dataBytes)));
-    const result = frameDecoder.handleData(messageBuffer);
+    const dataBytes : Array<number> = [0x42];
+    const payloadLength : number = dataBytes.length; // Valid length will be same as dataBytes.
+    const header : number = PUSH_HEADER + payloadLength;
+    const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
+    const result : DataResult = frameDecoder.handleData(messageBuffer);
     expect(result).toMatchObject({
       status: {
-        type: FRAME_TYPE.PUSH,
+        type: "push",
         complete: true,
       },
     });
@@ -45,10 +44,10 @@ describe("FrameDecoder#handleData", () => {
   });
 
   test("Invalid push request length throws error.", () => {
-    const dataBytes = [0x42, 0x43];
-    const payloadLength = dataBytes.length - 1; // Claimed size too small.
-    const header = PUSH_HEADER + payloadLength;
-    const messageBuffer = Buffer(new Uint8Array([header].concat(dataBytes)));
+    const dataBytes : Array<number> = [0x42, 0x43];
+    const payloadLength : number = dataBytes.length - 1; // Claimed size too small.
+    const header : number = PUSH_HEADER + payloadLength;
+    const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
     expect(() => {
       frameDecoder.handleData(messageBuffer);
     }).toThrow(
@@ -59,32 +58,32 @@ describe("FrameDecoder#handleData", () => {
   });
 
   test("Frame incomplete until there's enough data.", () => {
-    const dataBytes = [0x42];
-    const payloadLength = dataBytes.length + 1; // Expecting two bytes, but only sending one.
-    const header = PUSH_HEADER + payloadLength;
-    const messageBuffer = Buffer(new Uint8Array([header].concat(dataBytes)));
+    const dataBytes : Array<number> = [0x42];
+    const payloadLength : number = dataBytes.length + 1; // Expecting two bytes, but only sending one.
+    const header : number = PUSH_HEADER + payloadLength;
+    const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
     expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
       status: {
-        type: FRAME_TYPE.PUSH,
+        type: "push",
         complete: false, // Incomplete because there was only one data byte received.
       },
     });
     expect(
-      frameDecoder.handleData(Buffer(new Uint8Array([0x43]))),
+      frameDecoder.handleData(Buffer.from(new Uint8Array([0x43]))),
     ).toMatchObject({
       // Send follow up payload byte.
       status: {
-        type: FRAME_TYPE.PUSH,
+        type: "push",
         complete: true, // Should now be complete.
       },
     });
   });
 
   test("Data after complete frame throws error", () => {
-    const messageBuffer = Buffer(new Uint8Array([POP_HEADER]));
+    const messageBuffer = Buffer.from(new Uint8Array([POP_HEADER]));
     expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
       status: {
-        type: FRAME_TYPE.POP,
+        type: "pop",
         complete: true,
       },
     });

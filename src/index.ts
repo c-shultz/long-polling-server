@@ -5,12 +5,12 @@ import {
   getResponsePush,
   getResponsePop,
   isSocketFullyOpen,
-  FRAME_TYPE,
 } from "./lib/utils.js";
-import FrameDecoder from "./lib/frame_decoder.js";
+import FrameDecoder, { DataResult } from "./lib/frame_decoder.js";
 import DataStack from "./lib/data_stack.js";
 import { logger, getSocketInfo, getLogFileInfo } from "./lib/logger.js";
 import events from "node:events";
+import { Socket } from "node:net";
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = "localhost";
@@ -33,11 +33,12 @@ let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket) => {
 });
 
 // Start server, and start listening for incoming connections.
-const server = net.createServer((socket) => {
+const server = net.createServer((socket : Socket) => {
   logger.debug(
-    "Client connection attempt:",
-    socket.remoteAddress,
-    socket.remotePort,
+      getSocketInfo(socket),
+      "Client connection attempt:",
+      socket.remoteAddress,
+      socket.remotePort,
   );
 
   // Attempt to add incoming socket to connection list.
@@ -65,9 +66,9 @@ const server = net.createServer((socket) => {
     }
 
     // Try to parse incoming data, or just ignore client if there's a decoding error.
-    let status, payload;
+    let p_data : DataResult;
     try {
-      ({ status, payload = null } = frameDecoder.handleData(data));
+      p_data = frameDecoder.handleData(data);
     } catch (err) {
       logger.error([err, socket], "Error decoding data. Ending socket.");
       socket.end();
@@ -75,15 +76,15 @@ const server = net.createServer((socket) => {
     }
 
     // Act on push/pop when finished receiving all data for this connection.
-    if (status.complete) {
-      switch (status.type) {
-        case FRAME_TYPE.POP:
+    if (p_data.status.complete) {
+      switch (p_data.status.type) {
+        case "pop":
           cancelPopRequest = dataStack.requestPop((payload) => {
             socket.end(getResponsePop(payload)); // Send pop response and close socket.
           });
           break;
-        case FRAME_TYPE.PUSH:
-          cancelPushRequest = dataStack.requestPush(payload, () => {
+        case "push":
+          cancelPushRequest = dataStack.requestPush(p_data.payload, () => {
             socket.end(getResponsePush()); // Send push confirm and close socket.
           });
           break;
@@ -120,7 +121,7 @@ const server = net.createServer((socket) => {
     // Log other errors.
     socket.on("error", (err) => {
       // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
-      if (err.code === "ECONNRESET") {
+      if (err.syscall === "ECONNRESET") {
         logger.error(err, "Client disconnected.");
       } else {
         logger.fatal(err);
