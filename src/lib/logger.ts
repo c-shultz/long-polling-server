@@ -28,7 +28,7 @@ export const logger = pino(
  * @param {Socket} socket - A socket object to get info from.
  * @returns {object}      - Params to help identify socket/client/etc.
  */
-export function getSocketInfo(socket : Socket) {
+export function getSocketInfo(socket : Socket) : SocketInfo {
   let address = "unknown";
   let port = "unknown"; 
   if ("remoteAddress" in socket && socket.remoteAddress !== undefined) {
