@@ -33,7 +33,7 @@ let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket : Socket)
 });
 
 // Start server, and start listening for incoming connections.
-const server = net.createServer((socket : Socket) => {
+const server = net.createServer(async (socket : Socket) => {
   logger.debug(
       getSocketInfo(socket),
       "Client connection attempt:",
@@ -59,79 +59,75 @@ const server = net.createServer((socket : Socket) => {
 
   // Handle incoming data events (frames may come all at once or be split up).
   const frameDecoder = new FrameDecoder();
-  socket.on("data", (data) => {
-    let cancelPopRequest : Function | undefined;
-    let cancelPushRequest : Function | undefined;
+  let cancelPopRequest : Function | undefined;
+  let cancelPushRequest : Function | undefined;
+  let frameResult: DataResult;
+
+  // Handle incoming data events
+  socket.on("data", (data : Buffer) => {
     if (!isSocketFullyOpen(socket)) {
       return;
     }
+    frameDecoder.handleData(data);
+  });
+  // A little cleanup in case connections closed before queued pushes/pops could be serviced.
+  socket.on("end", () => {
+    logger.debug(getSocketInfo(socket), "Socket end event");
+    if (cancelPopRequest !== undefined) {
+      cancelPopRequest();
+      logger.debug(
+        getSocketInfo(socket),
+        "Cancelling pending pop request for socket",
+      );
+    }
+    if (cancelPushRequest !== undefined) {
+      cancelPushRequest();
+      logger.debug(
+        getSocketInfo(socket),
+        "Cancelling pending push request for",
+      );
+    }
+  });
+  // Remove connection for any possible full/partial socket closures.
+  const removeOnClose = () => {
+    connectionManager.removeConnection(socket);
+  };
+  ["close", "end", "finish"].forEach((eventName) => {
+    socket.once(eventName, removeOnClose);
+  });
 
-    // Try to parse incoming data, or just ignore client if there's a decoding error.
-    let p_data : DataResult;
-    try {
-      p_data = frameDecoder.handleData(data);
-    } catch (err) {
+  // Log other errors.
+  socket.on("error", (err : NodeJS.ErrnoException) => {
+    // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
+    if (err.code === "ECONNRESET") {
+      logger.error(err, "Client disconnected.");
+    } else {
+      logger.fatal(err);
+      throw err;
+    }
+  });
+
+  // Wait for complete frame and then push/pop.
+  try {
+    frameResult = await frameDecoder.done;
+  } catch (err) {
       logger.error([err, socket], "Error decoding data. Ending socket.");
       socket.end();
       return;
-    }
-
-    // Act on push/pop when finished receiving all data for this connection.
-    if (p_data.status.complete) {
-      switch (p_data.status.type) {
-        case "pop":
-          cancelPopRequest = dataStack.requestPop((payload : Buffer) => {
-            socket.end(getResponsePop(payload)); // Send pop response and close socket.
-          });
-          break;
-        case "push":
-          if (p_data.payload !== undefined) {
-            cancelPushRequest = dataStack.requestPush(p_data.payload, () => {
-              socket.end(getResponsePush()); // Send push confirm and close socket.
-            });
-          }
-          break;
-      }
-    }
-
-    // A little cleanup in case connections closed before queued pushes/pops could be serviced.
-    socket.on("end", () => {
-      logger.debug(getSocketInfo(socket), "Socket end event");
-      if (cancelPopRequest !== undefined) {
-        cancelPopRequest();
-        logger.debug(
-          getSocketInfo(socket),
-          "Cancelling pending pop request for socket",
-        );
-      }
-      if (cancelPushRequest !== undefined) {
-        cancelPushRequest();
-        logger.debug(
-          getSocketInfo(socket),
-          "Cancelling pending push request for",
-        );
-      }
+  }
+  if (frameResult.status.type === "pop") {
+    cancelPopRequest = dataStack.requestPop((payload : Buffer) => {
+      socket.end(getResponsePop(payload)); // Send pop response and close socket.
     });
-
-    // Remove connection for any possible full/partial socket closures.
-    const removeOnClose = () => {
-      connectionManager.removeConnection(socket);
-    };
-    ["close", "end", "finish"].forEach((eventName) => {
-      socket.once(eventName, removeOnClose);
-    });
-
-    // Log other errors.
-    socket.on("error", (err : NodeJS.ErrnoException) => {
-      // ECONNRESET is expected when the remote client disconnects unexpectly. We'll log and continue.
-      if (err.code === "ECONNRESET") {
-        logger.error(err, "Client disconnected.");
-      } else {
-        logger.fatal(err);
-        throw err;
+  } else if (frameResult.status.type === "push") {
+      if (frameResult.payload !== undefined) {
+        cancelPushRequest = dataStack.requestPush(frameResult.payload, () => {
+          socket.end(getResponsePush()); // Send push confirm and close socket.
+        });
       }
-    });
-  });
+  }
+
+  
 });
 
 server.on("error", (err) => {

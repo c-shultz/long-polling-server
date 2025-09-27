@@ -18,6 +18,9 @@ export default class FrameDecoder {
   status: FrameStatus;
   payload: Buffer;
   payloadCursor: number;
+  done: Promise<DataResult>;
+  resolve!: (value: DataResult | PromiseLike<DataResult>) => void;
+  reject!: Function;
   /**
    * Constructor.
    */
@@ -28,6 +31,10 @@ export default class FrameDecoder {
     };
     this.payloadCursor = 0; // Next payload write position for incoming data.
     this.payload = Buffer.from([]);
+    this.done = new Promise<DataResult>((res, rej) => {
+      this.resolve = res;
+      this.reject = rej;
+    });
   }
 
   /**
@@ -37,11 +44,11 @@ export default class FrameDecoder {
    * @param {Buffer} buffer - Incoming data.
    * @returns {object}      - Status object containing decoded type, whether or not all data is received and (optionally) a full payload for push requests.
    */
-  handleData(buffer : Buffer) : DataResult {
+  handleData(buffer : Buffer) : void {
     if (!Buffer.isBuffer(buffer)) {
-      throw new TypeError(
+      this.reject(new TypeError(
         "Unexpected data encoding. Expected Buffer received " + typeof buffer,
-      );
+      ));
     }
     if (this.status.complete) {
       throw new Error(
@@ -66,11 +73,12 @@ export default class FrameDecoder {
             logger.debug("New frame is a pop request.");
             this.status.type = "pop";
             this.status.complete = true;
-            return {
+            this.resolve({
               status: this.status,
-            };
+            });
+
           default:
-            throw new Error("Unexpcted frame header error.");
+            this.reject(new Error("Unexpected frame header error."));
         }
       }
       // falls through
@@ -81,27 +89,24 @@ export default class FrameDecoder {
 
         this.payloadCursor += incomingData.length;
         if (this.payloadCursor > this.payload.length) {
-          throw new RangeError(
+          this.reject(new RangeError(
             "Unexpected error. Payload cursor extends past buffer length",
-          );
+          ));
         } else if (this.payloadCursor == this.payload.length) {
           logger.debug("Finished getting data for push request.");
           this.status.complete = true;
-          return {
+          this.resolve({
             status: this.status,
             payload: this.payload,
-          };
+          });
         }
 
         break;
       case "pop": // POP should have been handled during first data event since it's only a byte, so this is unexpected.
       default:
-        throw new Error(
+        this.reject(new Error(
           "Unexpected new data. Frame already flagged as complete.",
-        );
+        ));
     }
-    return {
-      status: this.status
-    };
   }
 }

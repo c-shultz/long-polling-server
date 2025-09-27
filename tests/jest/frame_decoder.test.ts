@@ -11,16 +11,11 @@ describe("FrameDecoder#handleData", () => {
     frameDecoder = new FrameDecoder();
   });
 
-  test("Unknown type before data", () => {
-    expect(frameDecoder.status).toMatchObject({
-      type: "unknown",
-      complete: false,
-    });
-  });
-
-  test("Pop request decoded.", () => {
+  test("Pop request decoded.", async () => {
     const messageBuffer = Buffer.from(new Uint8Array([POP_HEADER]));
-    expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
+    frameDecoder.handleData(messageBuffer);
+    const result = await frameDecoder.done; 
+    expect(result).toMatchObject({
       status: {
         type: "pop",
         complete: true,
@@ -28,12 +23,13 @@ describe("FrameDecoder#handleData", () => {
     });
   });
 
-  test("Valid push request decoded.", () => {
+  test("Valid push request decoded.", async () => {
     const dataBytes : Array<number> = [0x42];
     const payloadLength : number = dataBytes.length; // Valid length will be same as dataBytes.
     const header : number = PUSH_HEADER + payloadLength;
     const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
-    const result : DataResult = frameDecoder.handleData(messageBuffer);
+    frameDecoder.handleData(messageBuffer);
+    const result = await frameDecoder.done;
     expect(result).toMatchObject({
       status: {
         type: "push",
@@ -44,35 +40,30 @@ describe("FrameDecoder#handleData", () => {
     expect(result.payload!.readUint8(0)).toBe(dataBytes[0]);
   });
 
-  test("Invalid push request length throws error.", () => {
+  test("Invalid push request length throws error.", async () => {
     const dataBytes : Array<number> = [0x42, 0x43];
     const payloadLength : number = dataBytes.length - 1; // Claimed size too small.
     const header : number = PUSH_HEADER + payloadLength;
     const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
-    expect(() => {
-      frameDecoder.handleData(messageBuffer);
-    }).toThrow(
-      new RangeError(
-        "Unexpected error. Payload cursor extends past buffer length",
-      ),
-    );
+    frameDecoder.handleData(messageBuffer);
+    await expect(frameDecoder.done)
+      .rejects
+      .toThrow(
+        new RangeError(
+          "Unexpected error. Payload cursor extends past buffer length",
+        )
+      );
   });
 
-  test("Frame incomplete until there's enough data.", () => {
+  test("Frame completes after handling multiple data.", async () => {
     const dataBytes : Array<number> = [0x42];
     const payloadLength : number = dataBytes.length + 1; // Expecting two bytes, but only sending one.
     const header : number = PUSH_HEADER + payloadLength;
     const messageBuffer : Buffer = Buffer.from(new Uint8Array([header].concat(dataBytes)));
-    expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
-      status: {
-        type: "push",
-        complete: false, // Incomplete because there was only one data byte received.
-      },
-    });
-    expect(
-      frameDecoder.handleData(Buffer.from(new Uint8Array([0x43]))),
-    ).toMatchObject({
-      // Send follow up payload byte.
+    frameDecoder.handleData(messageBuffer);
+    frameDecoder.handleData(Buffer.from(new Uint8Array([0x43])));
+    const result = await frameDecoder.done;
+    expect(result).toMatchObject({
       status: {
         type: "push",
         complete: true, // Should now be complete.
@@ -80,9 +71,11 @@ describe("FrameDecoder#handleData", () => {
     });
   });
 
-  test("Data after complete frame throws error", () => {
+  test("Data after complete frame throws error", async () => {
     const messageBuffer = Buffer.from(new Uint8Array([POP_HEADER]));
-    expect(frameDecoder.handleData(messageBuffer)).toMatchObject({
+    frameDecoder.handleData(messageBuffer);
+    const result = await frameDecoder.done;
+    expect(result).toMatchObject({
       status: {
         type: "pop",
         complete: true,
