@@ -16,10 +16,7 @@ describe("FrameDecoder#handleData", () => {
     frameDecoder.handleData(messageBuffer);
     const result = await frameDecoder.done; 
     expect(result).toMatchObject({
-      status: {
-        type: "pop",
-        complete: true,
-      },
+      type: "pop",
     });
   });
 
@@ -31,10 +28,7 @@ describe("FrameDecoder#handleData", () => {
     frameDecoder.handleData(messageBuffer);
     const result = await frameDecoder.done;
     expect(result).toMatchObject({
-      status: {
-        type: "push",
-        complete: true,
-      },
+      type: "push",
     });
     expect(result.payload).not.toBeNull();
     expect(result.payload!.readUint8(0)).toBe(dataBytes[0]);
@@ -64,10 +58,7 @@ describe("FrameDecoder#handleData", () => {
     frameDecoder.handleData(Buffer.from(new Uint8Array([0x43])));
     const result = await frameDecoder.done;
     expect(result).toMatchObject({
-      status: {
-        type: "push",
-        complete: true, // Should now be complete.
-      },
+      type: "push",
     });
   });
 
@@ -76,10 +67,7 @@ describe("FrameDecoder#handleData", () => {
     frameDecoder.handleData(messageBuffer);
     const result = await frameDecoder.done;
     expect(result).toMatchObject({
-      status: {
-        type: "pop",
-        complete: true,
-      },
+      type: "pop",
     });
     // Send more data even though it's complete.
     expect(() => {

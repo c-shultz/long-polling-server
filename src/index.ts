@@ -115,11 +115,11 @@ const server = net.createServer(async (socket : Socket) => {
       socket.end();
       return;
   }
-  if (frameResult.status.type === "pop") {
+  if (frameResult.type === "pop") {
     cancelPopRequest = dataStack.requestPop((payload : Buffer) => {
       socket.end(getResponsePop(payload)); // Send pop response and close socket.
     });
-  } else if (frameResult.status.type === "push") {
+  } else if (frameResult.type === "push") {
       if (frameResult.payload !== undefined) {
         cancelPushRequest = dataStack.requestPush(frameResult.payload, () => {
           socket.end(getResponsePush()); // Send push confirm and close socket.
