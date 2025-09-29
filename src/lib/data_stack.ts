@@ -3,19 +3,51 @@ import EventEmitter from "node:events";
 
 const MAX_STACK_SIZE = 100;
 
+export default class CancellableDataStack {
+  static dataStack: DataStack;
+  cancelFunction: Function | undefined;
+
+  constructor() {
+    if (CancellableDataStack.dataStack === undefined) {
+      CancellableDataStack.dataStack = new DataStack(MAX_STACK_SIZE);
+    }
+  }
+  pop() {
+    //return CancellableDataStack.dataStack.requestPop(this.requestControl);
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.cancelFunction = CancellableDataStack.dataStack.requestPop((payload: Buffer) => resolve(payload));
+    });
+  }
+  push(payload: Buffer) {
+    //return CancellableDataStack.dataStack.requestPush(payload, this.requestControl)
+    return new Promise<void>( (resolve, reject) => {
+      this.cancelFunction = CancellableDataStack.dataStack.requestPush(payload, () => resolve());
+    });
+  }
+
+  cancel() {
+    if (this.cancelFunction !== undefined) {
+      this.cancelFunction();
+    }
+  }
+}
+    
+
 /**
  * Class to create/manage stack.
  */
-export default class DataStack {
+export class DataStack {
   stack: Array<Buffer>;
   emitter: EventEmitter;
+  max_stack_size: number;
   /**
    * Constructor.
    */
-  constructor() {
+  constructor(max_stack_size: number) {
     this.stack = []; // Simple data structure of stack. Stored objects will be Buffer object.
     // Set up emitters to handle on push and on pop events for waiting clients.
     this.emitter = new EventEmitter();
+    this.max_stack_size = max_stack_size;
   }
 
   /**

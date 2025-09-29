@@ -7,10 +7,11 @@ import {
   isSocketFullyOpen,
 } from "./lib/utils.js";
 import FrameDecoder, { DataResult } from "./lib/frame_decoder.js";
-import DataStack from "./lib/data_stack.js";
+import CancellableDataStack from "./lib/data_stack.js";
 import { logger, getSocketInfo, getLogFileInfo } from "./lib/logger.js";
 import events from "node:events";
 import { Socket } from "node:net";
+import { getCallSites } from "node:util";
 
 const SERVER_PORT = 8080;
 const SERVER_HOSTNAME = "localhost";
@@ -23,7 +24,6 @@ const MAX_CONNECTIONS = 100;
 events.defaultMaxListeners = MAX_CONNECTIONS;
 
 logger.info("Starting up.");
-const dataStack = new DataStack();
 let connectionManager = new ConnectionManager(MAX_CONNECTIONS, (socket : Socket) => {
   // Callback for old connections that get bumped.
   if (isSocketFullyOpen(socket)) {
@@ -59,8 +59,7 @@ const server = net.createServer(async (socket : Socket) => {
 
   // Handle incoming data events (frames may come all at once or be split up).
   const frameDecoder = new FrameDecoder();
-  let cancelPopRequest : Function | undefined;
-  let cancelPushRequest : Function | undefined;
+  const dataStack = new CancellableDataStack();
   let frameResult: DataResult;
 
   // Handle incoming data events
@@ -73,20 +72,11 @@ const server = net.createServer(async (socket : Socket) => {
   // A little cleanup in case connections closed before queued pushes/pops could be serviced.
   socket.on("end", () => {
     logger.debug(getSocketInfo(socket), "Socket end event");
-    if (cancelPopRequest !== undefined) {
-      cancelPopRequest();
-      logger.debug(
-        getSocketInfo(socket),
-        "Cancelling pending pop request for socket",
-      );
-    }
-    if (cancelPushRequest !== undefined) {
-      cancelPushRequest();
-      logger.debug(
-        getSocketInfo(socket),
-        "Cancelling pending push request for",
-      );
-    }
+    dataStack.cancel();
+    logger.debug(
+      getSocketInfo(socket),
+      "Cancelling pending push/pop request for socket",
+    );
   });
   // Remove connection for any possible full/partial socket closures.
   const removeOnClose = () => {
@@ -116,18 +106,14 @@ const server = net.createServer(async (socket : Socket) => {
       return;
   }
   if (frameResult.type === "pop") {
-    cancelPopRequest = dataStack.requestPop((payload : Buffer) => {
+      const payload = await dataStack.pop();
       socket.end(getResponsePop(payload)); // Send pop response and close socket.
-    });
   } else if (frameResult.type === "push") {
       if (frameResult.payload !== undefined) {
-        cancelPushRequest = dataStack.requestPush(frameResult.payload, () => {
-          socket.end(getResponsePush()); // Send push confirm and close socket.
-        });
+        await dataStack.push(frameResult.payload);
+        socket.end(getResponsePush()); // Send push confirm and close socket.
       }
   }
-
-  
 });
 
 server.on("error", (err) => {
